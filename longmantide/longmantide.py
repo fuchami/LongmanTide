@@ -1,181 +1,253 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
-from math import sqrt, atan, asin, acos, sin, cos, radians
-from collections import namedtuple
+from datetime import datetime
+from math import sin, radians
 
 
-class TideModel():
+__all__ = ['calculate_julian_century', 'solve_longman_tide']
 
-    def __init__(self):
-        self.name = 'Model'
-        self.results = namedtuple("results", ["model_time", "gravity_moon", "gravity_sun", "gravity_total"])
-        self.results.model_time = []
-        self.results.gravity_moon = []
-        self.results.gravity_sun = []
-        self.results.gravity_total = []
 
-    def calculate_julian_century(self, timestamp):
-        """
-        Take a datetime object and returns the decimal Julian century and
-        floating point hour. This is in reference to noon on December 31,
-        1899 as stated in the paper.
-        """
-        origin_date = datetime(1899, 12, 31, 12, 00, 00)  # Noon Dec 31, 1899
-        dt = timestamp - origin_date
-        days = dt.days + dt.seconds/3600./24.
-        return days/36525, timestamp.hour + timestamp.minute/60. + timestamp.second/3600.
+"""
+Longman Earth Tide Calculator - Adopted from jrleeman's implementation of 
+I. M. Longman's earth tide calculations (see references below) 
 
-    def solve_longman(self, lat, lon, alt, time):
-        """
-        Given the location and datetime object, computes the current
-        gravitational tide and associated quantities. Latitude and longitude
-        and in the traditional decimal notation, altitude is in meters, time
-        is a datetime object.
-        """
+Parts of this program (c) 2017 John Leeman
+Licensed under the MIT License
 
-        T, t0 = self.calculate_julian_century(time)
 
-        if t0 < 0:
-            t0 += 24.
-        if t0 >= 24:
-            t0 -= 24.
+References
+----------
+I.M. Longman "Forumlas for Computing the Tidal Accelerations Due to the Moon 
+and the Sun" Journal of Geophysical Research, vol. 64, no. 12, 1959, 
+pp. 2351-2355
 
-        mu = 6.673e-8  # Newton's gravitational constant
-        M = 7.3537e25  # Mass of the moon in grams
-        S = 1.993e33  # Mass of the sun in grams
-        e = 0.05490  # Eccentricity of the moon's orbit
-        m = 0.074804  # Ratio of mean motion of the sun to that of the moon
-        c = 3.84402e10  # Mean distance between the centers of the earth and the moon
-        c1 = 1.495e13  # Mean distance between centers of the earth and sun in cm
-        h2 = 0.612  # Love parameter
-        k2 = 0.303  # Love parameter
-        a = 6.378270e8  # Earth's equitorial radius in cm
-        i = 0.08979719  # (i) Inclination of the moon's orbit to the ecliptic
-        omega = radians(23.452)  # Inclination of the Earth's equator to the ecliptic 23.452 degrees
-        L = -1 * lon  # For some reason his lat/lon is defined with W as + and E as -
-        lamb = radians(lat)  # (lambda) Latitude of point P
-        H = alt * 100.  # (H) Altitude above sea-level of point P in cm
+P. Schureman "Manual of harmonic analysis and prediction of tides" U.S. Coast 
+and Geodetic Survey, 1958
 
-        # Lunar Calculations
-        # (s) Mean longitude of moon in its orbit reckoned from the referred equinox
-        s = 4.72000889397 + 8399.70927456 * T + 3.45575191895e-05 * T * T + 3.49065850399e-08 * T * T * T
-        # (p) Mean longitude of lunar perigee
-        p = 5.83515162814 + 71.0180412089 * T + 0.000180108282532 * T * T + 1.74532925199e-07 * T * T * T
-        # (h) Mean longitude of the sun
-        h = 4.88162798259 + 628.331950894 * T + 5.23598775598e-06 * T * T
-        # (N) Longitude of the moon's ascending node in its orbit reckoned from the referred equinox
-        N = 4.52360161181 - 33.757146295 * T + 3.6264063347e-05 * T * T +  3.39369576777e-08 * T * T * T
-        # (I) Inclination of the moon's orbit to the equator
-        I = acos(cos(omega)*cos(i) - sin(omega)*sin(i)*cos(N))
-        # (nu) Longitude in the celestial equator of its intersection A with the moon's orbit
-        nu = asin(sin(i)*sin(N)/sin(I))
-        # (t) Hour angle of mean sun measured west-ward from the place of observations
-        t = radians(15. * (t0 - 12) - L)
+John Leeman's GitHub page for the original implementation: 
+https://github.com/jrleeman/LongmanTide
 
-        # (chi) right ascension of meridian of place of observations reckoned from A
-        chi = t + h - nu
-        # cos(alpha) where alpha is defined in eq. 15 and 16
-        cos_alpha = cos(N)*cos(nu)+sin(N)*sin(nu)*cos(omega)
-        # sin(alpha) where alpha is defined in eq. 15 and 16
-        sin_alpha = sin(omega)*sin(N)/sin(I)
-        # (alpha) alpha is defined in eq. 15 and 16
-        alpha = 2*atan(sin_alpha/(1+cos_alpha))
-        # (xi) Longitude in the moon's orbit of its ascending intersection with the celestial equator
-        xi = N-alpha
 
-        # (sigma) Mean longitude of moon in radians in its orbit reckoned from A
-        sigma = s - xi
-        # (l) Longitude of moon in its orbit reckoned from its ascending intersection with the equator
-        l = sigma + 2*e*sin(s-p)+(5./4)*e*e*sin(2*(s-p)) + (15./4)*m*e*sin(s-2*h+p) + (11./8)*m*m*sin(2*(s-h))
+ToDo
+----
+1. Return corrections indexed by datetime (possibly use pandas)
+2. Allow input data as a dataframe with named columns, and/or way to map 
+columns to data
+3. Test against Matlab implementation (consider altitutde - I don't think the 
+Matlab implementation factors this in)
 
-        # Sun
-        # (p1) Mean longitude of solar perigee
-        p1 = 4.90822941839 + 0.0300025492114 * T +  7.85398163397e-06 * T * T + 5.3329504922e-08 * T * T * T
-        # (e1) Eccentricity of the Earth's orbit
-        e1 = 0.01675104-0.00004180*T - 0.000000126*T*T
-        # (chi1) right ascension of meridian of place of observations reckoned from the vernal equinox
-        chi1 = t+h
-        # (l1) Longitude of sun in the ecliptic reckoned from the vernal equinox
-        l1 = h + 2*e1*sin(h-p1)
-        # cosine(theta) Theta represents the zenith angle of the moon
-        cos_theta = sin(lamb)*sin(I)*sin(l) + cos(lamb)*(cos(0.5*I)**2 * cos(l-chi) + sin(0.5*I)**2 * cos(l+chi))
-        # cosine(phi) Phi represents the zenith angle of the run
-        cos_phi = sin(lamb)*sin(omega)*sin(l1) + cos(lamb)*(cos(0.5*omega)**2 * cos(l1-chi1)+sin(0.5*omega)**2*cos(l1+chi1))
+"""
 
-        # Distance
-        # (C) Distance parameter, equation 34
-        C = sqrt(1./(1+0.006738*sin(lamb)**2))
-        # (r) Distance from point P to the center of the Earth
-        r = C*a + H
-        # (a') Distance parameter, equation 31
-        aprime = 1./(c*(1-e*e))
-        # (a1') Distance parameter, equation 31
-        aprime1 = 1./(c1*(1-e1*e1))
-        # (d) Distance between centers of the Earth and the moon
-        d = 1./((1./c) + aprime*e*cos(s-p)+aprime*e*e*cos(2*(s-p)) + (15./8)*aprime*m*e*cos(s-2*h+p) + aprime*m*m*cos(2*(s-h)))
-        # (D) Distance between centers of the Earth and the sun
-        D = 1./((1./c1) + aprime1*e1*cos(h-p1))
+# Constants #
+# See corresponding definitions in Longman 1959
+μ = 6.673e-8  # Newton's gravitational constant in cgs units (Verify this,
+# should be 6.674e-8?)
+M = 7.3537e25  # Mass of the moon in grams
+S = 1.993e33  # Mass of the sun in grams
+e = 0.05490  # Eccentricity of the moon's orbit
+m = 0.074804  # Ratio of mean motion of the sun to that of the moon
+c = 3.84402e10  # Mean distance between the centers of the earth and the moon in cm
+c1 = 1.495e13  # Mean distance between centers of the earth and sun in cm
+h2 = 0.612  # Love parameter  # See: https://en.wikipedia.org/wiki/Love_number
+k2 = 0.303  # Love parameter  # See Also:
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4599447/
+love = 1 + h2 - 1.5 * k2
+a = 6.378270e8  # Earth's equitorial radius in cm
+i = 0.08979719  # (i) Inclination of the moon's orbit to the ecliptic
+ω = radians(23.452)  # Inclination of the Earth's equator to the ecliptic
+origin_date = datetime(1899, 12, 31, 12, 00, 00)  # Noon Dec 31, 1899
+# End constants declaration #
 
-        # (gm) Vertical componet of tidal acceleration due to the moon
-        gm = (mu*M*r/(d*d*d))*(3*cos_theta**2-1) + (3./2)*(mu*M*r*r/(d*d*d*d))*(5*cos_theta**3 - 3*cos_theta)
-        # (gs) Vertical componet of tidal acceleration due to the sun
-        gs = mu*S*r/(D*D*D) * (3*cos_phi**2-1)
 
-        love = (1+h2-1.5*k2)
-        g0 = (gm+gs)*1e3*love
-        return gm*1e3*love,gs*1e3*love,g0
+def calculate_julian_century(dates: np.ndarray):
+    """
+    Same as calculate_julian_century but operates on numpy array objects,
+    and returns numpy arrays of century/hour values.
 
-    def run_model(self):
-        """
-        Runs the tidal model beginning at start_time with time steps of
-        increment seconds for days.
-        """
-        self.n_steps = int(24*self.duration*3600/self.increment)
+    Parameters
+    ----------
+    dates : np.ndarray
+        1-dimensional array of DateTime objects to convert into
+        century/hours arrays
 
-        for i in np.arange(self.n_steps):
-            time_at_step = self.start_time + i * timedelta(seconds=self.increment)
-            gm, gs, g = self.solve_longman(self.latitude, self.longitude,
-                                         self.altitude, time_at_step)
-            self.results.model_time.append(time_at_step)
-            self.results.gravity_moon.append(gm)
-            self.results.gravity_sun.append(gs)
-            self.results.gravity_total.append(g)
+    Returns
+    -------
+    2-tuple of:
+        T : np.ndarray
+            Number of Julian centuries (36525 days) from GMT Noon on
+            December 31, 1899
+        t0 : np.ndarray
+            Greenwich civil dates measured in hours
 
-    def plot(self):
-        """
-        Make a simple plot of the gravitational tide results from the
-        model run.
-        """
-        fig = plt.figure(figsize=(12, 6))
-        ax1 = plt.subplot(111)
-        ax1.set_xlabel(r'Date', fontsize=18)
-        ax1.set_ylabel(r'Anomaly [mGal]', fontsize=18)
-        ax1.tick_params(axis='both', which='major', labelsize=16)
-        ax1.plot_date(self.results.model_time, self.results.gravity_total,
-                      '-k', linewidth=2)
-        plt.show()
-        return fig, ax1
+    """
+    delta = dates - origin_date
+    days = np.array([x.days + x.seconds / 3600. / 24. for x in delta])
+    t0 = np.array([x.hour + x.minute / 60. + x.second / 3600. for x in
+                   dates])
+    return days / 36525, t0
 
-    def write(self,fname):
-        """
-        Write results out of a file for later analysis or reading into another
-        method for analysis/correction of data.
-        """
-        t_string = datetime.strftime(self.start_time, '%Y-%m-%dT%H:%M:%S')
-        f = open(fname, 'w')
-        f.write("Station latitude: %f\n" % self.latitude)
-        f.write("Station longitude: %f\n" % self.longitude)
-        f.write("Station altitude [m]: %f\n" % self.altitude)
-        f.write("Time Increment [s]: %f\n" % self.increment)
-        f.write("Start Time: %s\n" % t_string)
-        f.write("Duration [days]: %f\n" % self.duration)
-        f.write("\nTime,Lunar,Solar,Total\n")
-        f.write("YYYY-MM-DDTHH:MM:SS\tmGal\tmGal\tmGal\n")
 
-        for i in np.arange(self.n_steps):
-            t_string = datetime.strftime(self.results.model_time[i], '%Y-%m-%dT%H:%M:%S')
-            f.write("%s\t%f\t%f\t%f\n" %(t_string, self.results.gravity_moon[i], self.results.gravity_sun[i], self.results.gravity_total[i]))
-        f.close()
+def solve_longman_tide(lat: np.ndarray, lon: np.ndarray,
+                       alt: np.ndarray, time: np.ndarray):
+    """
+    Find the total gravity correction due to the Sun/Moon for the given
+    latitude, longitude, altitude, and time - supplied as numpy 1-d arrays.
+    Corrections are calculated for each corresponding set of data in the
+    supplied arrays, all arrays must be of the same shape (length and dimension)
+
+    This function returns the Lunar, Solar, and Total gravity corrections as
+    a 3-tuple of numpy 1-d arrays.
+
+    Parameters
+    ----------
+    lat : np.ndarray
+        1-dimensional array of float values denoting latitudes
+    lon : np.ndarray
+        1-dimensional array of float values denoting longitudes
+    alt : np.ndarray
+        1-dimensional array of float values denoting altitude in meters
+    time : np.ndarray
+        1-dimensional array of DateTime objects denoting the time series
+
+    Returns
+    -------
+    3-Tuple
+        gMoon: Vertical component of tidal acceleration due to the moon
+        gSun: Vertical component of tidal acceleration due to the sun
+        gTotal: Total vertical component of tidal acceleration (moon + sun)
+
+    """
+
+    assert lat.shape == lon.shape == alt.shape == time.shape
+
+    T, t0 = calculate_julian_century(time)
+    T2 = T ** 2
+    T3 = T ** 3
+
+    t0[t0 < 0] += 24
+    t0[t0 >= 24] -= 24
+
+    # lat/lon is defined with West positive (+) in the Longman paper
+    lon = -1 * lon
+    λ = np.radians(lat)  # λ Latitude of point P
+    cosλ = np.cos(λ)
+    sinλ = np.sin(λ)
+
+    ht = alt * 100  # height above sea-level of point P in centimeters (cm)
+
+    #
+    # Lunar Calculations #
+    #
+
+    # s Mean longitude of moon in its orbit reckoned from the referred
+    # equinox
+    # TODO: What is 1336 rev. ?
+    # Constants from Bartels [1957 pp. 747] eq (10')
+    # 270°26'11.72" + (1336 rev. + 1,108,411.20")T + 7.128" * T2 + 0.0072" * T3
+    # Converting degrees/minutes/seconds to radians gives us the constants
+    # TODO: use constants from Schureman or Bartels 1957 (coeff of T2 and T3)
+    s = 4.72000889397 + 8399.70927456 * T + 3.45575191895e-05 * \
+        T2 + 3.49065850399e-08 * T3
+    # p Mean longitude of lunar perigee
+    # constants from Bartels [1957] eq (11')
+    # p = 334° 19' 46.42" + (11 rev. + 392,522.51") T - 37.15" * T2 - 0.036" T3
+    p = 5.83515162814 + 71.0180412089 * T + 0.000180108282532 * \
+        T2 + 1.74532925199e-07 * T3
+    # (h) Mean longitude of the sun
+    h = 4.88162798259 + 628.331950894 * T + 5.23598775598e-06 * T2
+    # (N) Longitude of the moon's ascending node in its orbit reckoned from
+    # the referred equinox
+    N = 4.52360161181 - 33.757146295 * T + 3.6264063347e-05 * T2 + \
+        3.39369576777e-08 * T3
+    cosN = np.cos(N)
+    sinN = np.sin(N)
+
+    # I (uppercase i) Inclination of the moon's orbit to the equator
+    I = np.arccos(np.cos(ω) * np.cos(i) - np.sin(ω) * np.sin(i) *
+                  cosN)
+    # ν (nu) Longitude in the celestial equator of its intersection A with
+    #  the moon's orbit
+    ν = np.arcsin(np.sin(i) * sinN / np.sin(I))
+    # t Hour angle of mean sun measured west-ward from the place of
+    # observations
+    t = np.radians(15. * (t0 - 12) - lon)
+
+    # χ (chi) right ascension of meridian of place of observations reckoned
+    # from A
+    χ = t + h - ν
+    # cos α (alpha) where α is defined in eq. 15 and 16
+    cos_α = cosN * np.cos(ν) + sinN * np.sin(ν) * np.cos(ω)
+    # sin α (alpha) where α is defined in eq. 15 and 16
+    sin_α = sin(ω) * sinN / np.sin(I)
+    # (α) α is defined in eq. 15 and 16
+    α = 2 * np.arctan(sin_α / (1 + cos_α))
+    # ξ (xi) Longitude in the moon's orbit of its ascending intersection
+    # with the celestial equator
+    ξ = N - α
+
+    # σ (sigma) Mean longitude of moon in radians in its orbit reckoned
+    # from A
+    σ = s - ξ
+    # l (lowercase el) Longitude of moon in its orbit reckoned from its
+    # ascending intersection with the equator
+    l = σ + 2 * e * np.sin(s - p) + (5. / 4) * e * e * np.sin(
+        2 * (s - p)) + (15. / 4) * m * e * np.sin(s - 2 * h + p) + (
+                11. / 8) * m * m * np.sin(2 * (s - h))
+
+    # Solar Calculations #
+
+    # p1 (p-one) Longitude of solar perigee
+    # p1 = 281° 13' 15.0" + 6189.03" T + 1.63" T2 + 0.012" T3
+    # Schureman [1941, pp. 162]
+    p1 = 4.90822941839 + 0.0300025492114 * T + 7.85398163397e-06 * T2 \
+        + 5.3329504922e-08 * T3
+    # e1 (e-one) Eccentricity of the Earth's orbit
+    e1 = 0.01675104 - 0.00004180 * T - 0.000000126 * T2
+    # χ1 (chi-one) right ascension of meridian of place of observations
+    # reckoned from the vernal equinox
+    χ1 = t + h
+    # l1 (lowercase-el(L) one) Longitude of sun in the ecliptic reckoned
+    # from the vernal equinox
+    l1 = h + 2 * e1 * np.sin(h - p1)
+    # cosθ (theta) θ represents the zenith angle of the moon
+    cosθ = sinλ * np.sin(I) * np.sin(l) + cosλ * (
+            np.cos(0.5 * I) ** 2 * np.cos(l - χ) + np.sin(0.5 * I) ** 2 *
+            np.cos(l + χ))
+    # cosφ (phi) φ represents the zenith angle of the run
+    cosφ = sinλ * sin(ω) * np.sin(l1) + cosλ * \
+        (np.cos(0.5 * ω) ** 2 * np.cos(l1 - χ1) + np.sin(
+         0.5 * ω) ** 2 * np.cos(l1 + χ1))
+
+    # Distance Calculations #
+
+    # (C) Distance parameter, equation 34
+    # C**2 = 1/1( + 0.006738 sinλ ** 2)
+    C = np.sqrt(1. / (1 + 0.006738 * sinλ ** 2))
+    # (r) Distance from point P to the center of the Earth
+    r = C * a + ht
+    # a' (a prime) Distance parameter, equation 31
+    aprime = 1. / (c * (1 - e * e))
+    # a1' (a-one prime) Distance parameter, equation 31
+    aprime1 = 1. / (c1 * (1 - e1 * e1))
+    # (d) Distance between centers of the Earth and the moon
+    d = 1. / ((1. / c) + aprime * e * np.cos(s - p) + aprime * e * e *
+              np.cos(2 * (s - p)) + (15. / 8) * aprime * m * e * np.cos(
+                s - 2 * h + p) + aprime * m * m * np.cos(2 * (s - h)))
+    # (D) Distance between centers of the Earth and the sun
+    D = 1. / ((1. / c1) + aprime1 * e1 * np.cos(h - p1))
+
+    # (gm) Vertical component of tidal acceleration due to the moon
+    # Equation (1):
+    # gm = μMr/d^3 (3 * cos^2(θ) - 1) + 3/2 μMr/d^4 * (5 cos^3 θ - 3 cos(θ))
+    gm = (μ * M * r / d ** 3) * (3 * cosθ ** 2 - 1) + (
+         1.5 * (μ * M * r ** 2 / d ** 4) * (5 * cosθ ** 3 - 3 * cosθ))
+    # (gs) Vertical component of tidal acceleration due to the sun
+    gs = μ * S * r / D ** 3 * (3 * cosφ ** 2 - 1)
+
+    print("Love factor: ", love)
+    g0 = (gm + gs) * 1e3 * love
+
+    # Returns Lunar, Solar, Total corrections in mGals
+    return gm * 1e3 * love, gs * 1e3 * love, g0
+
