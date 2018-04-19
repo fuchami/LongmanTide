@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-from typing import Union
 from math import sin, radians
+from typing import Union
 import numpy as np
 import pandas as pd
 
@@ -44,8 +44,8 @@ Matlab implementation factors this in)
 """
 
 # Constants #
-μ = 6.673e-8  # Newton's gravitational constant in cgs units (Verify this,
-# should be 6.674e-8?)
+μ = 6.673e-8  # Newton's gravitational constant in cgs units (Verify this, should be 6.674e-8?)
+# μ = 6.67408e-8  # Newton's gravitational constant in cgs units (from NIST.gov)
 M = 7.3537e25  # Mass of the moon in grams
 S = 1.993e33  # Mass of the sun in grams
 e = 0.05490  # Eccentricity of the moon's orbit
@@ -144,9 +144,10 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     H = alt * 100  # height above sea-level of point P in centimeters (cm)
 
     #
-    # Lunar Calculations #
+    # Lunar Calculations
     #
-    # s Mean longitude of moon in its orbit reckoned from the referredequinox
+
+    # s Mean longitude of moon in its orbit reckoned from the referred equinox
     # Constants from Bartels [1957 pp. 747] eq (10')
     # 270°26'11.72" + (1336 rev. + 1,108,406.05")T + 7.128" * T2 + 0.0072" * T3
     # Where rev. is revolutions expressed as radians: 1336 rev. = 1336 * 2 * pi = 8394.335570392
@@ -187,7 +188,7 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
         + (11. / 8) * m * m * np.sin(2 * (s - h))
 
     #
-    # Solar Calculations #
+    # Solar Calculations
     #
 
     # p1 (p-one) Longitude of solar perigee (Schureman [1941, pp. 162])
@@ -207,7 +208,7 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
                                                 np.cos(l1 + χ1))
 
     #
-    # Distance Calculations #
+    # Distance Calculations
     #
 
     # (C) Distance parameter, equation 34

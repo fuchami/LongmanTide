@@ -46,13 +46,23 @@ DCENT=(t-dref)/36525;
 DCENT2=DCENT.^2;
 DCENT3 = DCENT.^3;
 
+% s (mean longitude of moon in orbit reckoned from referred equinox
 DS=4.720023434 + 8399.709299 * DCENT + 0.0000440696 * DCENT2;
+% p (mean longitude of lunar perigee)
 DP=5.835124713 +71.01800936 * DCENT-0.000180545 * DCENT2- 0.00000021817 * DCENT3;
+% h (Mean longitude of sun)
 DH=4.88162792 + 628.3319509 * DCENT + 0.00000527962 * DCENT2;
+% N (long of moon ascending node)
 DOLN=4.523588564 - 33.75715303 * DCENT + 0.000036749 * DCENT2;
+
+% p1 - longitude of solar perigee
 DPS=4.908229461 + 0.03000526416 * DCENT + 0.000007902463 * DCENT2;
+% e1 - eccentricity of earth's orbit
 DES=0.01675104 - 0.0000418 * DCENT - 0.000000126 * DCENT2;
+
+% sin(N)
 DSOLN=sin(DOLN);
+
 DCI=0.91369 - 0.03569 * cos(DOLN);
 DSI=sqrt(1 - DCI.^2) ;
 DSN=0.08968 * DSOLN./DSI;
@@ -69,16 +79,29 @@ DET(DETlt0) = DET(DETlt0)+6.2831852;
 DOLM=DS - DOLN + DET + 0.10979944*sin(DS-DP) + 0.003767474*sin(2*(DS-DP)) + ...
     0.0154002*sin(DS-2*DH + DP) + 0.00769395*sin(2*(DS-DH));
 DHA=(15*DTL-180-DEGLON)*RAD;
-DCHI=DHA+DH-atan(DSN./DCN);
-DAL=DEGLAT*RAD;
-DCT=sin(DAL).*DSI.*sin(DOLM)+cos(DAL).*((1 +DCI).*cos(DOLM-DCHI)+(1 -DCI).*cos(DOLM+DCHI))/2;
-DDA=2.60144+0.143250*cos(DS-DP)+0.0078644*cos(2*(DS-DP))+0.0200918 *cos(DS-2*DH+DP)+0.0146006*cos(2*(DS-DH));
-DR=6.378388*ones(length(DAL),1)./sqrt(1 +0.00676902*(1 - cos(DAL).^2));
-DGM=0.49049*DR.*(DDA.^3).*(3*(DCT.^2)-1)+0.00074*(DR.^2).*(DDA.^4) .*DCT.*(5*(DCT.^2)-3);
-DOLS=DH+2*DES.*sin(DH-DPS);
-DCHIS=DHA+DH;
-DDS=0.668881*(1 + DES.*cos(DH-DPS))./(1 - (DES.^2));
-DCF=0.39798*sin(DAL).*sin(DOLS)+cos(DAL).*(0.95869*cos(DOLS-DCHIS)+.0413*cos(DOLS+DCHIS));
-DGS=13.2916*DR.*(3*(DCF.^2)-1).*(DDS.^3);
-Tide_pre = (DGM+DGS)*0.00116;
 
+DCHI=DHA+DH-atan(DSN./DCN);
+
+DAL=DEGLAT*RAD;
+
+DCT=sin(DAL).*DSI.*sin(DOLM)+cos(DAL).*((1 +DCI).*cos(DOLM-DCHI)+(1 -DCI).*cos(DOLM+DCHI))/2;
+
+DDA=2.60144+0.143250*cos(DS-DP)+0.0078644*cos(2*(DS-DP))+0.0200918 *cos(DS-2*DH+DP)+0.0146006*cos(2*(DS-DH));
+
+DR=6.378388*ones(length(DAL),1)./sqrt(1 +0.00676902*(1 - cos(DAL).^2));
+
+% Moon tidal effect
+DGM=0.49049*DR.*(DDA.^3).*(3*(DCT.^2)-1)+0.00074*(DR.^2).*(DDA.^4) .*DCT.*(5*(DCT.^2)-3);
+
+DOLS=DH+2*DES.*sin(DH-DPS);
+
+DCHIS=DHA+DH;
+
+DDS=0.668881*(1 + DES.*cos(DH-DPS))./(1 - (DES.^2));
+
+DCF=0.39798*sin(DAL).*sin(DOLS)+cos(DAL).*(0.95869*cos(DOLS-DCHIS)+.0413*cos(DOLS+DCHIS));
+
+% Solar tidal effect
+DGS=13.2916*DR.*(3*(DCF.^2)-1).*(DDS.^3);
+
+Tide_pre = (DGM+DGS)*0.00116;

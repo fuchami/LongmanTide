@@ -26,9 +26,8 @@ setup(
     long_description=__description__,
     author='Zachery P. Brady, John R. Leeman',
     author_email='bradyzp@dynamicgravitysystems.com',
-    url='Project URL https://github.com/bradyzp/LongmanTide',
+    url='https://github.com/bradyzp/LongmanTide/',
     download_url='https://github.com/bradyzp/LongmanTide',
-    license=_license,
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
@@ -43,4 +42,3 @@ setup(
         'Topic :: Software Development :: Libraries',
     ]
 )
-
