@@ -1,38 +1,60 @@
 # Longman Tide
 
-This is a module and tool that implements the tidal scheme of Longman 1959.
+Longman Tide is a Python library which implements the scheme for computing the tidal accelerations due to the moon and
+sun, as published by I.M. Longman in the Journal of Geophysical Research, Vol 64, no. 12, 1959
 
-## Useage
+### Requirements
 
-An example use case of computing the tide over a 7 day period for State College, PA.
+The numpy and Pandas libraries are required for processing tide corrections, and importing trajectory data for correction
 
-```
-import longmantide as tide
+The matplotlib library is currently only used in the examples to give a visual representation of the data.
+
+
+### References
+
+I.M. Longman "Forumlas for Computing the Tidal Accelerations Due to the Moon
+and the Sun" Journal of Geophysical Research, vol. 64, no. 12, 1959,
+pp. 2351-2355
+
+P. Schureman "Manual of harmonic analysis and prediction of tides" U.S. Coast and Geodetic Survey, 1958
+
+
+#### Acknowledgements
+
+This library is based on the work of John Leeman's LongmanTide Python implementation.
+
+
+
+### Examples
+
+There are several example scripts in the examples directory illustrating how to use the longmantide solving functions.
+
+Here is a simple demonstration of calculating a correction series for a static latitude/longitude/altitude over a
+specified time period, with intervals of 1 second.
+
+```python
+
 from datetime import datetime
+from longmantide import solve_point_corr
 
-model = tide.TideModel() # Make a model object
-model.increment = 60*10 # Run every 10 minutes [seconds]
-model.latitude = 40.7914 # Station Latitude
-model.longitude = 282.1414 # Station Longitude
-model.altitude = 370. # Station Altitude [meters]
-model.start_time = datetime(2015,4,23,0,0,0)
-model.duration = 7 # Model run duration [days]
-model.run_model() # Do the run
-model.write('output.txt') # Save results to text file
-model.plot() # Make a quick-dirty-plot
-```
+# Example static data for Denver, January 1, 2018
+lat = 39.7392
+lon = -104.9903
+alt = 1609.3
+t0 = datetime(2018, 1, 1, 12, 0, 0)
 
-Should you want to compute gravity at a specific time (say for correction of field data), that can be done as:
+# Calculate corrections for one day (60*60*24 points), with 1 second resolution
+result_df = solve_point_corr(lat, lon, alt, t0, n=60*60*24, increment='S')
 
-```
-import longmantide as tide
-from datetime import datetime
+# Result is a pandas DataFrame, with a DatetimeIndex, and correction values in the 'total_corr' column
+# i.e.
+corrections = result_df['total_corr'].values  # get the internal Numpy ndarray for corrections
 
-lat = 40.7914 # Station Latitude
-lon = 282.1414 # Station Longitude
-alt = 370. # Station Altitude [meters]
-model = tide.TideModel() # Make a model object
-time = datetime(2015,4,23,0,0,0) # When we want the tide
-gm,gs,g = model.solve_longman(lat,lon,alt,time)
-print gm,gs,g # Lunar, Solar, and Total
+# Plot the corrections using matplotlib
+from matplotlib import pyplot as plt
+
+plt.plot(corrections)
+plt.ylabel('Tidal Correction [mGals]')
+plt.show()
+
 ```

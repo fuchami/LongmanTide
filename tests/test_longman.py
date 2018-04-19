@@ -3,7 +3,8 @@
 from datetime import datetime
 import numpy as np
 import pytest
-from longmantide import solve_longman_tide
+
+from longmantide import solve_longman_tide, solve_tide_df, solve_point_corr, import_trajectory
 
 
 def test_array_calculation():
@@ -32,7 +33,26 @@ def test_static_location_tide():
     assert g[0] == pytest.approx(0.00353474727722)
 
 
+def test_solve_point_corr():
+    # Test solving tide over a period given static lat/lon/alt
+    lat = 39.7392
+    lon = -104.9903
+    alt = 1609.3
+    t0 = datetime(2018, 4, 18, 12, 0, 0)
+
+    res = solve_point_corr(lat, lon, alt, t0, n=10000, increment='S')
+    print(res.describe())
 
 
+def test_solve_trajectory_input():
+    file = 'tests/test_gps_data.txt'
+
+    trajectory = import_trajectory(file, timeformat='hms')
+    print(trajectory.index[0:1])
+    print(trajectory.describe())
+
+    df = solve_tide_df(trajectory, lat='lat', lon='long', alt='ell_ht')
+    print(df[0:10])
+    print(df.describe())
 
 
