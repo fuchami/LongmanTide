@@ -1,19 +1,46 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+# -*- coding: utf-8 -*-
 
-config = {
-    'description': 'longmantide',
-    'author': 'John R. Leeman',
-    'url': 'Project URL https://github.com/jrleeman/LongmanTide',
-    'download_url': 'https://github.com/jrleeman/LongmanTide',
-    'author_email': 'kd5wxb@gmail.com',
-    'version': '0.1',
-    'install_requires': ['nose', 'numpy', 'matplotlib'],
-    'packages': ['longmantide'],
-    'scripts': [],
-    'name': 'LongmanTide'
-}
+from setuptools import setup
 
-setup(**config)
+__version__ = '0.1.1'
+__description__ = """
+Longman Tide is a small python library used to compute the accelerations at a given location and                   
+time on earth, due to the tidal effects of the Sun and Moon. The calculated accelerations can then be 
+used as a correction parameter to gravimetric survey data."""
+
+with open('requirements.txt', 'r') as fd:
+    requirements = fd.read().strip().splitlines()
+
+with open('LICENSE', 'r') as fd:
+    _license = fd.read().strip()
+
+setup(
+    name='LongmanTide',
+    version=__version__,
+    packages=['longmantide'],
+    install_requires=requirements,
+    tests_require=['pytest'],
+    python_requires='>=3.5.*',
+    description="Tide gravitational correction based on I.M. Longman's Formulas for Computing the Tidal Accelerations "
+                "Due to the Moon and the Sun",
+    long_description=__description__,
+    author='Zachery P. Brady, John R. Leeman',
+    author_email='bradyzp@dynamicgravitysystems.com',
+    url='Project URL https://github.com/bradyzp/LongmanTide',
+    download_url='https://github.com/bradyzp/LongmanTide',
+    license=_license,
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Operating System :: Microsoft',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Topic :: Scientific/Engineering :: GIS',
+        'Topic :: Scientific/Engineering :: Astronomy',
+        'Topic :: Software Development :: Libraries',
+    ]
+)
+

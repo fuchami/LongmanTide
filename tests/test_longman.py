@@ -15,7 +15,7 @@ def test_array_calculation():
                      datetime(2018, 4, 17, 13, 0, 0)])
 
     lunar, solar, total = solve_longman_tide(lat, lon, alt, time)
-    print("Lunar: {}\nSolar: {}\nTotal: {}".format(lunar, solar, total))
+    assert 2 == len(lunar) == len(solar) == len(total)
 
 
 def test_static_location_tide():
@@ -25,9 +25,6 @@ def test_static_location_tide():
     time = np.array([datetime(2015, 4, 23, 0, 0, 0)])
 
     gm, gs, g = solve_longman_tide(lat, lon, alt, time)
-    print("gLunar: ", gm[0])
-    print("gSolar: ", gs[0])
-    print("gTotal: ", g[0])
     assert gm[0] == pytest.approx(0.0324029651226)
     assert gs[0] == pytest.approx(-0.0288682178454)
     assert g[0] == pytest.approx(0.00353474727722)
@@ -41,18 +38,18 @@ def test_solve_point_corr():
     t0 = datetime(2018, 4, 18, 12, 0, 0)
 
     res = solve_point_corr(lat, lon, alt, t0, n=10000, increment='S')
-    print(res.describe())
 
 
 def test_solve_trajectory_input():
     file = 'tests/test_gps_data.txt'
 
     trajectory = import_trajectory(file, timeformat='hms')
-    print(trajectory.index[0:1])
-    print(trajectory.describe())
 
     df = solve_tide_df(trajectory, lat='lat', lon='long', alt='ell_ht')
-    print(df[0:10])
-    print(df.describe())
+    assert len(df) == len(trajectory)
 
 
+def test_compare_matlab_synthetic(matlab_df):
+    calculated_df = solve_tide_df(matlab_df.copy(), lat='lat', lon='lon', alt='alt')
+    assert np.allclose(matlab_df, calculated_df, atol=1e-3)
+    assert np.allclose(calculated_df, matlab_df, atol=1e-3)

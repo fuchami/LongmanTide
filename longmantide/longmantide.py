@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 
-__all__ = ['calculate_julian_century', 'solve_longman_tide', 'solve_tide_df', 'solve_point_corr']
+__all__ = ['calculate_julian_century', 'solve_longman_tide', 'solve_longman_tide_scalar','solve_tide_df',
+           'solve_point_corr']
 
 
 """
@@ -237,10 +238,37 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     return gm * 1e3 * love, gs * 1e3 * love, g0
 
 
-def solve_point_corr(lat, lon, alt, t0, n, increment='S'):
+def solve_longman_tide_scalar(lat, lon, alt, time):
     """
-    Utility function to generate a tide correction DataFrame for a static lat/lon given start time t0,
-    an increment, and count (n) of datapoints to generate
+    Simple wrapper around solve_longman_tide that allows passing of singular scalar values instead of an array.
+    This function simply wraps the scalar values within an ndarray and then extracts the result elements.
+
+    Parameters
+    ----------
+    lat
+    lon
+    alt
+    time
+
+    Returns
+    -------
+
+    """
+    lata = np.array(lat)
+    lona = np.array(lon)
+    alta = np.array(alt)
+    timea = np.array(time)
+
+    gm, gs, g0 = solve_longman_tide(lata, lona, alta, timea)
+    return gm[0], gs[0], g0[0]
+
+
+def solve_point_corr(lat, lon, alt, t0=datetime.now(), n=3600, increment='S'):
+    """
+    Utility function to generate a tide correction DataFrame for a static lat/lon/alt given start time t0,
+    an increment, and count (n) of datapoints to generate.
+    Default parameters are supplied that will generate a correction series with one second increment over a one hour
+    period, with start time being the time of execution.
 
     Parameters
     ----------
