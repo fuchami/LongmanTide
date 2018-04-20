@@ -4,7 +4,8 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from tidegravity import solve_longman_tide, solve_tide_df, solve_point_corr, import_trajectory
+from tidegravity import solve_longman_tide, solve_longman_tide_scalar, solve_tide_df, solve_point_corr
+from tidegravity import import_trajectory, calculate_julian_century
 
 
 def test_array_calculation():
@@ -53,3 +54,15 @@ def test_compare_matlab_synthetic(matlab_df):
     calculated_df = solve_tide_df(matlab_df.copy(), lat='lat', lon='lon', alt='alt')
     assert np.allclose(matlab_df, calculated_df, atol=1e-3)
     assert np.allclose(calculated_df, matlab_df, atol=1e-3)
+
+
+def test_solve_longman_scalar():
+    lat = 40.7914
+    lon = 282.1414
+    alt = 370.
+    time = datetime(2015, 4, 23, 0, 0, 0)
+
+    gm, gs, g0 = solve_longman_tide_scalar(lat, lon, alt, time)
+    assert gm == pytest.approx(0.0324029651226)
+    assert gs == pytest.approx(-0.0288682178454)
+    assert g0 == pytest.approx(0.00353474727722)

@@ -12,21 +12,44 @@ The numpy and pandas libraries are required for processing tide corrections, and
 
 The matplotlib library is currently only used in the examples to give a visual representation of the data.
 
+API
+---
+
+.. role:: py(code)
+    :language: python
+
+The following API functions are provided (subject to change in future releases):
+
+* :py:`solve_longman_tide(lat, lon, alt, time)`
+
+  Solve for total gravity correction due to Sun/Moon from numpy array inputs
+* :py:`solve_longman_tide_scalar(lat, lon, alt, time)`
+
+  Wrapper around solve_longman_tide, accepts single scalar values for lat/lon/alt and a single DateTime object
+* :py:`solve_point_corr(lat, lon, alt, t0, n=3600, increment='S')`
+
+  Return tidal correction over a time span defined by t0 with n points at given increment for static (scalar)
+  position parameters
+* :py:`solve_tide_df(df, lat='lat', lon='lon', alt='alt')`
+
+  Wrapper accepting a pandas DataFrame (df) object as the input, df should have a DatetimeIndex, and lat/lon/alt
+  columns. Alternate column names can be provided via parameters, which will then be used to extract components from
+  the input DataFrame.
+
 
 References
 ----------
 
-- I.M. Longman "Forumlas for Computing the Tidal Accelerations Due to the Moon
+* I.M. Longman "Forumlas for Computing the Tidal Accelerations Due to the Moon
   and the Sun" Journal of Geophysical Research, vol. 64, no. 12, 1959,
   pp. 2351-2355
-
-- P. Schureman "Manual of harmonic analysis and prediction of tides" U.S. Coast and Geodetic Survey, 1958
+* P\. Schureman "Manual of harmonic analysis and prediction of tides" U.S. Coast and Geodetic Survey, 1958
 
 
 Acknowledgements
 ----------------
 
-.. _LongmanTide: https://github.com/rleeman/LongmanTide
+.. _LongmanTide: https://github.com/jrleeman/LongmanTide
 
 This library is based on the work of John Leeman's LongmanTide Python implementation.
 LongmanTide_
@@ -40,7 +63,7 @@ There are several example scripts in the examples directory illustrating how to 
 Here is a simple demonstration of calculating a correction series for a static latitude/longitude/altitude over a
 specified time period, with intervals of 1 second.
 
-.. code:: python
+.. code-block:: python
 
     from datetime import datetime
     from tidegravity import solve_point_corr

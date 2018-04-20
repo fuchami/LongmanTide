@@ -25,6 +25,9 @@ setup(
     version=__version__,
     packages=['tidegravity'],
     install_requires=requirements,
+    extras_requires={
+        'MPL': ['matplotlib>=2.2.0']
+    },
     tests_require=['pytest'],
     python_requires='>=3.5.*',
     description="Tide gravitational correction based on I.M. Longman's Formulas for Computing the Tidal Accelerations "
