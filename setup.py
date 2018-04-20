@@ -1,29 +1,34 @@
 # -*- coding: utf-8 -*-
 
+import os
 from setuptools import setup
 
-__version__ = '0.1.1'
-__description__ = """
-Longman Tide is a small python library used to compute the accelerations at a given location and                   
-time on earth, due to the tidal effects of the Sun and Moon. The calculated accelerations can then be 
-used as a correction parameter to gravimetric survey data."""
+__version__ = '0.2.0-alpha.3'
+requirements = [
+    'numpy >= 1.14.2',
+    'pandas >= 0.22.0'
+]
 
-with open('requirements.txt', 'r') as fd:
-    requirements = fd.read().strip().splitlines()
 
-with open('LICENSE', 'r') as fd:
+def join_relpath(file):
+    return os.path.join(os.path.dirname(__file__), file)
+
+
+with open(join_relpath('LICENSE'), 'r') as fd:
     _license = fd.read().strip()
 
+with open(join_relpath('README.rst'), 'r') as fd:
+    long_description = fd.read().strip()
+
 setup(
-    name='LongmanTide',
+    name='tidegravity',
     version=__version__,
-    packages=['longmantide'],
+    packages=['tidegravity'],
     install_requires=requirements,
     tests_require=['pytest'],
     python_requires='>=3.5.*',
     description="Tide gravitational correction based on I.M. Longman's Formulas for Computing the Tidal Accelerations "
                 "Due to the Moon and the Sun",
-    long_description=__description__,
     author='Zachery P. Brady, John R. Leeman',
     author_email='bradyzp@dynamicgravitysystems.com',
     url='https://github.com/bradyzp/LongmanTide/',
@@ -40,5 +45,6 @@ setup(
         'Topic :: Scientific/Engineering :: GIS',
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Software Development :: Libraries',
-    ]
+    ],
+    long_description=long_description,
 )

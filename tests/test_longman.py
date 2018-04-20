@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from longmantide import solve_longman_tide, solve_tide_df, solve_point_corr, import_trajectory
+from tidegravity import solve_longman_tide, solve_tide_df, solve_point_corr, import_trajectory
 
 
 def test_array_calculation():

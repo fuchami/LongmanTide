@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from longmantide import solve_tide_df
+from tidegravity import solve_tide_df
 
 
 def convert_matlab_serial_time(time: float):

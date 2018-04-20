@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
-from longmantide import solve_point_corr
+from tidegravity import solve_point_corr
 
 
 def run():

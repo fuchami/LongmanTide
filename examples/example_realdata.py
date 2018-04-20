@@ -2,13 +2,13 @@
 
 """
 Example showing how to import a GPS Trajectory data file, and generate a tide acceleration correction
-using the longmantide.solve_tide_df function.
+using the tidegravity.solve_tide_df function.
 """
 
 import sys
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter
-from longmantide import import_trajectory, solve_tide_df
+from tidegravity import import_trajectory, solve_tide_df
 
 
 def run():
