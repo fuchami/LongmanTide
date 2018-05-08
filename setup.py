@@ -3,7 +3,7 @@
 import os
 from setuptools import setup
 
-__version__ = '0.2.0-alpha.3'
+__version__ = '0.3.0-beta.1'
 requirements = [
     'numpy >= 1.14.2',
     'pandas >= 0.22.0'
@@ -25,13 +25,13 @@ setup(
     version=__version__,
     packages=['tidegravity'],
     install_requires=requirements,
-    extras_requires={
+    extras_require={
         'MPL': ['matplotlib>=2.2.0']
     },
     tests_require=['pytest'],
     python_requires='>=3.5.*',
-    description="Tide gravitational correction based on I.M. Longman's Formulas for Computing the Tidal Accelerations "
-                "Due to the Moon and the Sun",
+    description="Tide gravitational correction based on I.M. Longman's Formulas for "
+                "Computing the Tidal Accelerations Due to the Moon and the Sun",
     author='Zachery P. Brady, John R. Leeman',
     author_email='bradyzp@dynamicgravitysystems.com',
     url='https://github.com/bradyzp/LongmanTide/',

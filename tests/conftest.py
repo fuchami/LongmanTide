@@ -12,7 +12,7 @@ def convert_matlab_serial_time(time: float):
 
 
 def load_sample_dataset(fpath: str):
-    df = pd.read_csv(fpath, header=0, names=['lon', 'lat', 'ser_time', 'total_corr'])
+    df = pd.read_csv(fpath, header=0, names=['lon', 'lat', 'ser_time', 'g0'])
 
     dt_index = df['ser_time'].apply(convert_matlab_serial_time)
     dt_index.name = 'time'
@@ -26,4 +26,3 @@ def load_sample_dataset(fpath: str):
 @pytest.fixture(scope="module")
 def matlab_df():
     return load_sample_dataset('tests/matlab_synthetic.csv')
-

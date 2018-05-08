@@ -1,16 +1,22 @@
 Tide Gravity
 ============
 
-tidegravity is a Python library which implements the Longman scheme for computing the tidal accelerations due to the
+tidegravity is a Python library which implements Ivor Longman's scheme for computing the tidal accelerations due to the
 moon and sun, as published by I.M. Longman in the Journal of Geophysical Research, Vol 64, no. 12, 1959
-This can be useful for correcting survey data collected with a relative gravity meter.
+This can be useful for correcting gravimetric survey data, as the gravitational forces due to the tidal effects of the
+Sun and Moon can be on the order of several hundred microGals, depending on the surveyors location and the relative
+positions of the Sun and Moon to each other, and the surveyor.
 
 Requirements
 ------------
 
+- numpy
+- pandas
+
 The numpy and pandas libraries are required for processing tide corrections, and importing trajectory data for correction
 
-The matplotlib library is currently only used in the examples to give a visual representation of the data.
+The matplotlib library is an optional requirement and is currently only used in the examples to plot a visual
+representation of the data.
 
 API
 ---
@@ -71,6 +77,7 @@ specified time period, with intervals of 1 second.
     # Example static data for Denver, January 1, 2018
     lat = 39.7392
     lon = -104.9903
+    # Note: West should be entered as a negative longitude value
     alt = 1609.3
     t0 = datetime(2018, 1, 1, 12, 0, 0)
 

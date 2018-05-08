@@ -52,6 +52,9 @@ def test_solve_trajectory_input():
 
 def test_compare_matlab_synthetic(matlab_df):
     calculated_df = solve_tide_df(matlab_df.copy(), lat='lat', lon='lon', alt='alt')
+    # Drop gravity component columns for comparison with MATLAB
+    calculated_df = calculated_df.drop(['gm', 'gs'], axis=1)
+
     assert np.allclose(matlab_df, calculated_df, atol=1e-3)
     assert np.allclose(calculated_df, matlab_df, atol=1e-3)
 

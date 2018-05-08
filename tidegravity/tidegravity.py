@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
+from datetime import datetime, timezone
 from math import sin, radians
 from typing import Union
 import numpy as np
 import pandas as pd
 
 
-__all__ = ['calculate_julian_century', 'solve_longman_tide', 'solve_longman_tide_scalar','solve_tide_df',
-           'solve_point_corr']
+__all__ = ['calculate_julian_century', 'solve_longman_tide', 'solve_longman_tide_scalar',
+           'solve_tide_df', 'solve_point_corr']
 
 
 """
@@ -19,7 +19,6 @@ Parts of this program (c) 2017 John Leeman
 Any other modifications from the base LongmanTide (c) 2018 Zachery Brady
 
 Licensed under the MIT License, see LICENSE file for full text
-
 
 References
 ----------
@@ -36,15 +35,9 @@ Notes
 Unicode greek symbols are used to more clearly name variables based on the equations in Longman's paper.
 This is simply a style decision and may not reflect Python best practices.
 
-
-ToDo
-----
-3. Test against Matlab implementation (consider altitutde - I don't think the 
-Matlab implementation factors this in)
-
 """
 
-# Constants #
+# Constants Definitions #
 μ = 6.673e-8  # Newton's gravitational constant in cgs units (Verify this, should be 6.674e-8?)
 # μ = 6.67408e-8  # Newton's gravitational constant in cgs units (from NIST.gov)
 M = 7.3537e25  # Mass of the moon in grams
@@ -60,7 +53,7 @@ a = 6.378270e8  # Earth's equitorial radius in cm
 i = 0.08979719  # (i) Inclination of the moon's orbit to the ecliptic
 ω = radians(23.452)  # Inclination of the Earth's equator to the ecliptic
 origin_date = datetime(1899, 12, 31, 12, 00, 00)  # Noon Dec 31, 1899
-# End Constants declaration #
+# End Constants Definitions #
 
 
 def calculate_julian_century(dates: Union[np.ndarray, pd.DatetimeIndex]):
@@ -70,6 +63,7 @@ def calculate_julian_century(dates: Union[np.ndarray, pd.DatetimeIndex]):
     This function accepts either a numpy ndarray or pandas DatetimeIndex as input,
     and returns a 2-tuple of the corresponding Julian century decimals and floating
     point hours.
+    Note: All date/times should be supplied as UTC
 
     Parameters
     ----------
@@ -124,9 +118,9 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     Returns
     -------
     3-Tuple
-        gMoon: Vertical component of tidal acceleration due to the moon
-        gSun: Vertical component of tidal acceleration due to the sun
-        gTotal: Total vertical component of tidal acceleration (moon + sun)
+        gMoon (gm): Vertical component of tidal acceleration due to the moon
+        gSun (gs): Vertical component of tidal acceleration due to the sun
+        gTotal (g0): Total vertical component of tidal acceleration (moon + sun)
 
     """
     assert lat.shape == lon.shape == alt.shape == time.shape
@@ -144,12 +138,9 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     λ = np.radians(lat)  # λ Latitude of point P
     cosλ = np.cos(λ)
     sinλ = np.sin(λ)
-
     H = alt * 100  # height above sea-level of point P in centimeters (cm)
 
-    #
     # Lunar Calculations
-    #
 
     # s Mean longitude of moon in its orbit reckoned from the referred equinox
     # Constants from Bartels [1957 pp. 747] eq (10')
@@ -239,7 +230,7 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     # g0 Total vertical component due to Lunar and Solar forces
     g0 = (gm + gs) * 1e3 * love
 
-    # Returns Lunar, Solar, Total corrections in mGals
+    # Returns Lunar, Solar, Total corrections in mGals, as numpy 1d-arrays
     return gm * 1e3 * love, gs * 1e3 * love, g0
 
 
@@ -267,16 +258,16 @@ def solve_longman_tide_scalar(lat: float, lon: float, alt: float, time: datetime
               g0 is the total gravitational effect of the sun and moon (gm+gs)
 
     """
-    lata = np.array([lat])
-    lona = np.array([lon])
-    alta = np.array([alt])
-    timea = np.array([time])
+    lat_arr = np.array([lat])
+    lon_arr = np.array([lon])
+    alt_arr = np.array([alt])
+    time_arr = np.array([time])
 
-    gm, gs, g0 = solve_longman_tide(lata, lona, alta, timea)
+    gm, gs, g0 = solve_longman_tide(lat_arr, lon_arr, alt_arr, time_arr)
     return gm[0], gs[0], g0[0]
 
 
-def solve_point_corr(lat, lon, alt, t0=datetime.now(), n=3600, increment='S'):
+def solve_point_corr(lat: float, lon: float, alt: float, t0=datetime.now(tz=timezone.utc), n=3600, increment='S'):
     """
     Utility function to generate a tide correction DataFrame for a static lat/lon/alt given start time t0,
     an increment, and count (n) of datapoints to generate.
@@ -309,30 +300,39 @@ def solve_point_corr(lat, lon, alt, t0=datetime.now(), n=3600, increment='S'):
     Returns
     -------
     df : pd.DataFrame
-        DataFrame (index=DateTime, lat, lon, alt, total_corr) shape: (n, 4)
-        Pandas DataFrame indexed by DateTime containing the latitude, longitude, altitude and total correction
+        DataFrame (index=DateTime, lat, lon, alt, gm, gs, g0) shape: (n, 4)
+        Pandas DataFrame indexed by DateTime containing the latitude, longitude, altitude, lunar, solar,
+        and total corrections.
+
+    Notes
+    -----
+    total_corr column renamed to g0 and gm/gs added in v0.3.0
+
     """
     df = pd.DataFrame(data={'lat': np.repeat(lat, n), 'lon': np.repeat(lon, n), 'alt': np.repeat(alt, n)},
                       index=pd.DatetimeIndex(start=t0, freq=increment, periods=n))
 
     gm, gs, g0 = solve_longman_tide(df.lat, df.lon, df.alt, df.index)
-    df['total_corr'] = g0
+    df['gm'] = gm
+    df['gs'] = gs
+    df['g0'] = g0
     return df
 
 
-def solve_tide_df(df: pd.DataFrame, lat='lat', lon='lon', alt='alt', time=None):
+def solve_tide_df(df: pd.DataFrame, lat='lat', lon='lon', alt='alt'):
     """
     Solve tidal gravity corrections for a given Pandas DataFrame, returning the source
     DataFrame with an appended 'tide_corr' column.
     Source DataFrame should be indexed by datetime and must contain latitude, longitude,
     and altitude columns.
     Source column names can be specified by passing the applicable column name to the
-    lat, lon, alt, time parameters as required.
+    lat, lon, alt parameters as required.
+    Time is assumed to be the index of the DataFrame
 
     Returns
     -------
     df : pd.DataFrame
-        Source df with added tide_corr column of g0 (total vertical acc component due to sun + moon) in mGals
+        Copy of source df with added columns 'gm' 'gs' and 'g0': lunar, solar and total corrections respectively
 
     """
     _lat = df[lat].values
@@ -342,5 +342,7 @@ def solve_tide_df(df: pd.DataFrame, lat='lat', lon='lon', alt='alt', time=None):
     res_df = df.copy(deep=True)  # type: pd.DataFrame
 
     gm, gs, g0 = solve_longman_tide(_lat, _lon, _alt, _time)
-    res_df['total_corr'] = g0
+    res_df['gm'] = gm
+    res_df['gs'] = gs
+    res_df['g0'] = g0
     return res_df
