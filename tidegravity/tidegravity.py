@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime, timezone
-from math import sin, radians
+from datetime import datetime
+from math import radians
 from typing import Union
 import numpy as np
 import pandas as pd
@@ -23,8 +23,7 @@ Licensed under the MIT License, see LICENSE file for full text
 References
 ----------
 I.M. Longman "Forumlas for Computing the Tidal Accelerations Due to the Moon 
-and the Sun" Journal of Geophysical Research, vol. 64, no. 12, 1959, 
-pp. 2351-2355
+and the Sun" Journal of Geophysical Research, vol. 64, no. 12, 1959, pp. 2351-2355
 
 P. Schureman "Manual of harmonic analysis and prediction of tides" U.S. Coast and Geodetic Survey, 1958
 
@@ -34,6 +33,11 @@ Notes
 -----
 Unicode greek symbols are used to more clearly name variables based on the equations in Longman's paper.
 This is simply a style decision and may not reflect Python best practices.
+
+Pythons Datetime.datetime objects are TimeZone naive - e.g. when creating a datetime of
+>>> datetime(1899, 12, 31, 12, 0, 0)
+The object refers to exactly the time specified, with no knowledge of the time-zone - when doing calculations against
+such an object we need to make sure that whatever datetime being used is specified in the same time zone.
 
 """
 
@@ -63,13 +67,23 @@ def calculate_julian_century(dates: Union[np.ndarray, pd.DatetimeIndex]):
     This function accepts either a numpy ndarray or pandas DatetimeIndex as input,
     and returns a 2-tuple of the corresponding Julian century decimals and floating
     point hours.
-    Note: All date/times should be supplied as UTC
 
     Parameters
     ----------
     dates : Union[np.ndarray, pd.DatetimeIndex]
         1-dimensional array of DateTime objects to convert into
         century/hours arrays
+
+    Notes
+    -----
+    All DateTimes should be supplied as UTC values, using a timezone-naive DateTime object
+    This can be accomplished either by using datetime.utcnow(), or by constructing datetime
+    objects where the times are specified as UTC values
+
+    Reference Date: 1899 December 31 12:00:00
+    Reference ordinal: 693961.5 (MATLAB Serial date from January 0, 0000)
+        Delta 366 days
+    Reference ordinal: 694327.5 (Python ordinal from January 1, 0001)
 
     Returns
     -------
@@ -170,7 +184,7 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     # cos α (alpha) where α is defined in eq. 15 and 16
     cos_α = cosN * np.cos(ν) + sinN * np.sin(ν) * np.cos(ω)
     # sin α (alpha) where α is defined in eq. 15 and 16
-    sin_α = sin(ω) * sinN / np.sin(I)
+    sin_α = np.sin(ω) * sinN / np.sin(I)
     # (α) α is defined in eq. 15 and 16
     α = 2 * np.arctan(sin_α / (1 + cos_α))
     # ξ (xi) Longitude in the moon's orbit of its ascending intersection with the celestial equator
@@ -182,9 +196,7 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     l = σ + 2 * e * np.sin(s - p) + (5. / 4) * e * e * np.sin(2 * (s - p)) + (15. / 4) * m * e * np.sin(s - 2 * h + p)\
         + (11. / 8) * m * m * np.sin(2 * (s - h))
 
-    #
     # Solar Calculations
-    #
 
     # p1 (p-one) Longitude of solar perigee (Schureman [1941, pp. 162])
     # p1 = 281° 13' 15.0" + 6189.03" T + 1.63" T2 + 0.012" T3
@@ -199,12 +211,10 @@ def solve_longman_tide(lat: np.ndarray, lon: np.ndarray, alt: np.ndarray, time: 
     cosθ = sinλ * np.sin(I) * np.sin(l) + cosλ * (np.cos(0.5 * I) ** 2 * np.cos(l - χ) + np.sin(0.5 * I) ** 2 *
                                                   np.cos(l + χ))
     # cosφ (phi) φ represents the zenith angle of the run
-    cosφ = sinλ * sin(ω) * np.sin(l1) + cosλ * (np.cos(0.5 * ω) ** 2 * np.cos(l1 - χ1) + np.sin(0.5 * ω) ** 2 *
+    cosφ = sinλ * np.sin(ω) * np.sin(l1) + cosλ * (np.cos(0.5 * ω) ** 2 * np.cos(l1 - χ1) + np.sin(0.5 * ω) ** 2 *
                                                 np.cos(l1 + χ1))
 
-    #
     # Distance Calculations
-    #
 
     # (C) Distance parameter, equation 34
     # C**2 = 1/(1 + 0.006738 sinλ ** 2)
@@ -267,7 +277,7 @@ def solve_longman_tide_scalar(lat: float, lon: float, alt: float, time: datetime
     return gm[0], gs[0], g0[0]
 
 
-def solve_point_corr(lat: float, lon: float, alt: float, t0=datetime.now(tz=timezone.utc), n=3600, increment='S'):
+def solve_point_corr(lat: float, lon: float, alt: float, t0=datetime.utcnow(), n=3600, increment='S'):
     """
     Utility function to generate a tide correction DataFrame for a static lat/lon/alt given start time t0,
     an increment, and count (n) of datapoints to generate.
