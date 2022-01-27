@@ -1,3 +1,9 @@
+================================
+Difference from the fork source
+================================
+
+The fork source requirement is too strong, so I modified the contents of setup.py
+
 Tide Gravity
 ============
 

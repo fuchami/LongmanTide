@@ -5,8 +5,8 @@ from setuptools import setup
 
 __version__ = '0.4.0-beta.1'
 requirements = [
-    'numpy == 1.18.5',
-    'pandas == 1.0.4'
+    'numpy >= 1.18.5',
+    'pandas >= 1.0.4'
 ]
 
 
